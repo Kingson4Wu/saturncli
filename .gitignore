@@ -1,5 +1,6 @@
 saturn_cli
 saturn_svr
+*.exe
 .idea
 .history/
 .vscode
