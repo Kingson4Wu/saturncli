@@ -200,6 +200,6 @@ func (s *ser) stopJob(rw http.ResponseWriter, r *http.Request, job *notifyJob) {
 		s.logger.Infof("saturn server job stop success, name:%s, args: %s, signature: %s", name, args, signature)
 	} else {
 		_, _ = rw.Write([]byte(base.FAILURE))
-		s.logger.Errorf("saturn server job stop fail, name:%s, args: %s, signature: %s", name, args, signature)
+		s.logger.Errorf("saturn server job stop failure, name:%s, args: %s, signature: %s", name, args, signature)
 	}
 }

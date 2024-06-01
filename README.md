@@ -2,7 +2,7 @@
 
 English| [简体中文](https://github.com/kingson4wu/saturn_cli_go/blob/main/README-CN.md)
 
-A command-line client that communicates with a server process via Linux domain sockets can be embedded into a Go-written server, facilitating the use of Shell-type scheduled tasks in the open-source project [Saturn](https://github.com/vipshop/Saturn).
+A command-line client that communicates with a server process via Linux domain sockets. The server communication logic can be directly embedded into server code written in Golang, facilitating the use of shell-type scheduled tasks in the open-source project [Saturn](https://github.com/vipshop/Saturn).
 
 ## Design Overview
 
