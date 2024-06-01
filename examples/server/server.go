@@ -34,7 +34,18 @@ func main() {
 		panic(err)
 	}
 
+	/*var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		signalChan := utils.ListenSignal()
+		signal := <-signalChan
+		fmt.Println(signal)
+		fmt.Println("======")
+	}()*/
+
 	server.NewServer(&utils.DefaultLogger{},
 		"/tmp/notify.sock").Serve()
 
+	//wg.Wait()
 }
