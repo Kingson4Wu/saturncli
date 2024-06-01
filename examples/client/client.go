@@ -1,8 +1,8 @@
 package main
 
 import (
-	saturn "github.com/Kingson4Wu/saturn_cli_go/client"
-	"github.com/Kingson4Wu/saturn_cli_go/utils"
+	saturn "github.com/Kingson4Wu/saturncli/client"
+	"github.com/Kingson4Wu/saturncli/utils"
 )
 
 func main() {

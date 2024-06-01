@@ -1,9 +1,9 @@
 package server_test
 
 import (
-	"github.com/Kingson4Wu/saturn_cli_go/client"
-	"github.com/Kingson4Wu/saturn_cli_go/server"
-	"github.com/Kingson4Wu/saturn_cli_go/utils"
+	"github.com/Kingson4Wu/saturncli/client"
+	"github.com/Kingson4Wu/saturncli/server"
+	"github.com/Kingson4Wu/saturncli/utils"
 	"testing"
 	"time"
 )

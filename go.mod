@@ -1,4 +1,4 @@
-module github.com/Kingson4Wu/saturn_cli_go
+module github.com/Kingson4Wu/saturncli
 
 go 1.19
 

@@ -1,16 +1,16 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/kingson4wu/saturn_cli_go)&nbsp;](https://goreportcard.com/report/github.com/kingson4wu/saturn_cli_go)![GitHub top language](https://img.shields.io/github/languages/top/kingson4wu/saturn_cli_go)&nbsp;[![GitHub stars](https://img.shields.io/github/stars/kingson4wu/saturn_cli_go)&nbsp;](https://github.com/kingson4wu/saturn_cli_go/stargazers)[![codecov](https://codecov.io/gh/kingson4wu/saturn_cli_go/branch/main/graph/badge.svg)](https://codecov.io/gh/kingson4wu/saturn_cli_go) [![Go Reference](https://pkg.go.dev/badge/github.com/kingson4wu/saturn_cli_go.svg)](https://pkg.go.dev/github.com/kingson4wu/saturn_cli_go) [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go#database) [![LICENSE](https://img.shields.io/github/license/kingson4wu/saturn_cli_go.svg?style=flat-square)](https://github.com/kingson4wu/saturn_cli_go/blob/main/LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kingson4wu/saturncli)&nbsp;](https://goreportcard.com/report/github.com/kingson4wu/saturncli)![GitHub top language](https://img.shields.io/github/languages/top/kingson4wu/saturncli)&nbsp;[![GitHub stars](https://img.shields.io/github/stars/kingson4wu/saturncli)&nbsp;](https://github.com/kingson4wu/saturncli/stargazers)[![codecov](https://codecov.io/gh/kingson4wu/saturncli/branch/main/graph/badge.svg)](https://codecov.io/gh/kingson4wu/saturncli) [![Go Reference](https://pkg.go.dev/badge/github.com/kingson4wu/saturncli.svg)](https://pkg.go.dev/github.com/kingson4wu/saturncli) [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go#database) [![LICENSE](https://img.shields.io/github/license/kingson4wu/saturncli.svg?style=flat-square)](https://github.com/kingson4wu/saturncli/blob/main/LICENSE)
 
-English| [简体中文](https://github.com/kingson4wu/saturn_cli_go/blob/main/README-CN.md)
+English| [简体中文](https://github.com/kingson4wu/saturncli/blob/main/README-CN.md)
 
 A command-line client that communicates with a server process via Linux domain sockets. The server communication logic can be directly embedded into server code written in Golang, facilitating the use of shell-type scheduled tasks in the open-source project [Saturn](https://github.com/vipshop/Saturn).
 
 ## Design Overview
 
-![](https://github.com/kingson4wu/saturn_cli_go/blob/main/resource/img/design-overview-saturn-cli-go.png)
+![](https://github.com/kingson4wu/saturncli/blob/main/resource/img/design-overview-saturn-cli-go.png)
 
 ## Quick Start
 
-**1. embedded usage:** see [examples](https://github.com/kingson4wu/saturn_cli_go/tree/main/examples) 
+**1. embedded usage:** see [examples](https://github.com/kingson4wu/saturncli/tree/main/examples) 
 
 **2. command line usage:**
 1. `make`
@@ -21,13 +21,13 @@ A command-line client that communicates with a server process via Linux domain s
 
 ## Documentation
 
-See [wiki](https://github.com/kingson4wu/saturn_cli_go/wiki)
+See [wiki](https://github.com/kingson4wu/saturncli/wiki)
 
 ## Contributing
 
-If you are interested in contributing to saturn_cli_go, see [CONTRIBUTING](https://github.com/kingson4wu/saturn_cli_go/blob/main/CONTRIBUTING.md) 
+If you are interested in contributing to saturncli, see [CONTRIBUTING](https://github.com/kingson4wu/saturncli/blob/main/CONTRIBUTING.md) 
 
 ## License
 
-saturn_cli_go is licensed under the term of the [Apache 2.0 License](https://github.com/kingson4wu/saturn_cli_go/blob/main/LICENSE)
+saturncli is licensed under the term of the [Apache 2.0 License](https://github.com/kingson4wu/saturncli/blob/main/LICENSE)
 

@@ -10,7 +10,7 @@ First of all, thanks for your contribution, you can participate in this project 
 
 ## Before you started
 
-Before you start, please make sure to read and observe our [Code Of Conduct](https://github.com/kingson4wu/saturn_cli_go/blob/main/CODE_OF_CONDUCT.md).
+Before you start, please make sure to read and observe our [Code Of Conduct](https://github.com/kingson4wu/saturncli/blob/main/CODE_OF_CONDUCT.md).
 
 ## Contribution steps
 

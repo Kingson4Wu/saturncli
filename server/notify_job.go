@@ -2,8 +2,8 @@ package server
 
 import (
 	"errors"
-	"github.com/Kingson4Wu/saturn_cli_go/base"
-	"github.com/Kingson4Wu/saturn_cli_go/utils"
+	"github.com/Kingson4Wu/saturncli/base"
+	"github.com/Kingson4Wu/saturncli/utils"
 	"github.com/google/uuid"
 	"net/http"
 	"strings"
