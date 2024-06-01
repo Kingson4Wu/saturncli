@@ -27,5 +27,5 @@ jobs:
         #go test -race ./... -gcflags "-l"
 
       - name: Benchmark Test
-        working-directory: ./benchmark
+        #working-directory: ./benchmark
         run: go test -count 1 -v -bench=. ./...
