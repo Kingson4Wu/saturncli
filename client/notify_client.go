@@ -59,8 +59,8 @@ func (c *cli) Run(task *NotifyTask) string {
 		select {
 		case <-requestFinishChan:
 			c.logger.Infof("saturn client listen signal, response finish : %s, signature: %s, args:%s", task.Name, runSignature, task.Args)
-		case <-signalChan:
-			c.logger.Warnf("saturn client listen signal, request interrupt : %s, signature: %s, args:%s", task.Name, runSignature, task.Args)
+		case signal := <-signalChan:
+			c.logger.Warnf("saturn client listen signal: %s, request interrupt : %s, signature: %s, args:%s", signal, task.Name, runSignature, task.Args)
 			if !task.Stop && runSignature != "" {
 				c.stop(task.Name, runSignature)
 			}
