@@ -18,6 +18,6 @@ func (c *cli) buildHttpClient() *http.Client {
 	}
 }
 
-func (task *NotifyTask) buildUrl() string {
+func (task *Task) buildUrl() string {
 	return "http://unix/" + task.Name + "?" + task.Args
 }

@@ -15,9 +15,6 @@ type notifyJob struct {
 	Handler any
 }
 
-//type JobHandler func(map[string]string, string) bool
-//type StoppableJobHandler func(map[string]string, string, chan struct{}) bool
-
 var (
 	jobs                   = map[string]*notifyJob{}
 	lock                   sync.Mutex
@@ -81,13 +78,6 @@ func stopTheStoppableJob(jobName string) bool {
 		return true
 	}
 	return false
-}
-
-func init() {
-	/*	AddNotifyJob("hello", func(args map[string]string) bool {
-		//logger.Infof("hello, args : %s", args)
-		return true
-	})*/
 }
 
 type ser struct {
@@ -187,11 +177,9 @@ func (s *ser) stopJob(rw http.ResponseWriter, r *http.Request, job *notifyJob) {
 	signature := r.Header.Get(base.StopSignature)
 	if signature != "" {
 		//stop the task with specified signature.
-		//s.logger.Warnf("saturn server job stop, name:%s, args: %s, signature: %s", name, args, signature)
 		executeResult = stopTheSpecifiedStoppableJob(name, signature)
 	} else {
 		//stop all task with job name.
-		//s.logger.Warnf("saturn server job stop, name:%s, args: %s", name, args)
 		executeResult = stopTheStoppableJob(name)
 	}
 

@@ -31,7 +31,7 @@ func BenchmarkNotifyServe(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		client.NewClient(&utils.DefaultLogger{},
-			socketPath).Run(&client.NotifyTask{
+			socketPath).Run(&client.Task{
 			Name: "hello",
 			Args: "id=45&tel=48893",
 		})
@@ -59,7 +59,7 @@ func BenchmarkParallelNotifyServe(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			client.NewClient(&utils.DefaultLogger{},
-				socketPath).Run(&client.NotifyTask{
+				socketPath).Run(&client.Task{
 				Name: "hello",
 				Args: "id=45&tel=48893",
 			})
