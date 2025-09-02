@@ -99,7 +99,11 @@ func (c *cli) Run(task *Task) string {
 		return base.FAILURE
 	}
 
-	defer response.Body.Close()
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			c.logger.Warnf("saturn client failed to close response body: %v", err)
+		}
+	}()
 	bodyData, err := io.ReadAll(response.Body)
 	if err != nil {
 		c.logger.Errorf("saturn client read resp body failure from server, task: %s, signature: %s, args:%se, err: %+v", task.Name, runSignature, task.Args, err)
@@ -130,7 +134,11 @@ func (c *cli) stop(task *Task, signature string) {
 		c.logger.Errorf("saturn client [stop] receive result from server, task: %s, signature: %s, request server failure, err: %+v", task.Name, signature, err)
 		return
 	}
-	defer response.Body.Close()
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			c.logger.Warnf("saturn client [stop] failed to close response body: %v", err)
+		}
+	}()
 	bodyData, err := io.ReadAll(response.Body)
 	if err != nil {
 		c.logger.Errorf("saturn client [stop] read resp body failure from server, task: %s, signature: %s, request server failure, err: %+v", task.Name, signature, err)

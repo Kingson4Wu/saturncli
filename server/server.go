@@ -16,7 +16,9 @@ func (s *ser) Serve() {
 	}
 
 	s.logger.Info("saturn server Unix Serve ...")
-	os.Remove(sockPath)
+	if err := os.Remove(sockPath); err != nil && !os.IsNotExist(err) {
+		s.logger.Warnf("Failed to remove existing socket file: %v", err)
+	}
 	server := http.Server{
 		Handler: s,
 	}

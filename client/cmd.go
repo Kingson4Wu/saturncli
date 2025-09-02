@@ -50,11 +50,12 @@ Options:
 		Signature: *signature,
 	})
 
-	if result == base.SUCCESS {
+	switch result {
+	case base.SUCCESS:
 		fmt.Fprintln(os.Stderr, "Execution Success")
-	} else if result == base.INTERRUPT {
+	case base.INTERRUPT:
 		fmt.Fprintln(os.Stderr, "Execution Interrupted")
-	} else {
+	default:
 		fmt.Fprintln(os.Stderr, "Execution Failure")
 		os.Exit(1)
 	}
