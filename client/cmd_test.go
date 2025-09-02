@@ -76,3 +76,57 @@ func TestNewStoppableJob(t *testing.T) {
 
 	//./saturn_cli -name hello_stoppable -stop
 }*/
+
+// 新增测试用例：测试任务名称为空的情况
+// 注意：这个测试会导致调用os.Exit(1)，因此不能直接运行
+// func TestNewCmdWithEmptyName(t *testing.T) {
+// 	// 重置命令行参数
+// 	os.Args = []string{"cmd"}
+//
+// 	// 添加空的任务名称
+// 	os.Args = append(os.Args, "-name")
+// 	os.Args = append(os.Args, "") // 空名称
+//
+// 	// 捕获输出
+// 	// 这里应该输出警告信息并返回FAILURE
+// 	client.NewCmd(&utils.DefaultLogger{},
+// 		"/tmp/notify.sock").Run()
+// }
+
+// 新增测试用例：测试停止任务功能
+func TestStopJob(t *testing.T) {
+	go func() {
+		_ = server.AddStoppableJob("test_stoppable", func(m map[string]string, signature string, quit chan struct{}) bool {
+			for i := 0; i < 10; i++ {
+				select {
+				case <-quit:
+					fmt.Printf("Job %s with signature %s stopped\n", "test_stoppable", signature)
+					return true
+				default:
+					fmt.Printf("Processing step %d for job %s with signature %s\n", i, "test_stoppable", signature)
+					time.Sleep(1 * time.Second)
+				}
+			}
+			return true
+		})
+		server.NewServer(&utils.DefaultLogger{},
+			"/tmp/notify_stop.sock").Serve()
+	}()
+
+	time.Sleep(3 * time.Second)
+
+	// 启动一个长时间运行的任务
+	go func() {
+		os.Args = []string{"cmd", "-name", "test_stoppable"}
+		client.NewCmd(&utils.DefaultLogger{},
+			"/tmp/notify_stop.sock").Run()
+	}()
+
+	// 等待任务开始执行
+	time.Sleep(2 * time.Second)
+
+	// 发送停止信号
+	os.Args = []string{"cmd", "-name", "test_stoppable", "-stop"}
+	client.NewCmd(&utils.DefaultLogger{},
+		"/tmp/notify_stop.sock").Run()
+}
