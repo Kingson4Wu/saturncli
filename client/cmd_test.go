@@ -95,6 +95,8 @@ func TestNewStoppableJob(t *testing.T) {
 
 // 新增测试用例：测试停止任务功能
 func TestStopJob(t *testing.T) {
+	// 由于flag.Parse()不是并发安全的，我们需要串行执行这个测试
+	// 先启动服务器
 	go func() {
 		_ = server.AddStoppableJob("test_stoppable", func(m map[string]string, signature string, quit chan struct{}) bool {
 			for i := 0; i < 10; i++ {
@@ -115,12 +117,16 @@ func TestStopJob(t *testing.T) {
 
 	time.Sleep(3 * time.Second)
 
-	// 启动一个长时间运行的任务
-	go func() {
-		os.Args = []string{"cmd", "-name", "test_stoppable"}
-		client.NewCmd(&utils.DefaultLogger{},
-			"/tmp/notify_stop.sock").Run()
+	// 保存原始的os.Args
+	originalArgs := os.Args
+	defer func() {
+		os.Args = originalArgs // 恢复原始参数
 	}()
+
+	// 启动一个长时间运行的任务
+	os.Args = []string{"cmd", "-name", "test_stoppable"}
+	client.NewCmd(&utils.DefaultLogger{},
+		"/tmp/notify_stop.sock").Run()
 
 	// 等待任务开始执行
 	time.Sleep(2 * time.Second)
