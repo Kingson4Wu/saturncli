@@ -14,3 +14,12 @@ func ListenSignal() chan os.Signal {
 	signal.Notify(signalChan, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	return signalChan
 }
+
+// StopSignal cancels signal notifications and closes the provided channel.
+func StopSignal(signalChan chan os.Signal) {
+	if signalChan == nil {
+		return
+	}
+	signal.Stop(signalChan)
+	close(signalChan)
+}

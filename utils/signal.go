@@ -15,3 +15,12 @@ func ListenSignal() chan os.Signal {
 	// interrupt: kill -2 [pid] OR kill -SIGINT [pid]
 	return signalChan
 }
+
+// StopSignal cancels signal notifications and closes the provided channel.
+func StopSignal(signalChan chan os.Signal) {
+	if signalChan == nil {
+		return
+	}
+	signal.Stop(signalChan)
+	close(signalChan)
+}

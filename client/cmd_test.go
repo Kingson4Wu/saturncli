@@ -6,27 +6,41 @@ import (
 	"github.com/Kingson4Wu/saturncli/server"
 	"github.com/Kingson4Wu/saturncli/utils"
 	"os"
+	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
 
 func TestNewCmd(t *testing.T) {
+	registry := server.NewRegistry()
+	result := make(chan map[string]string, 1)
+	if err := registry.AddJob("hello", func(m map[string]string, signature string) bool {
+		result <- m
+		return true
+	}); err != nil {
+		t.Fatalf("failed to add job: %v", err)
+	}
 
-	go func() {
-		_ = server.AddJob("hello", func(m map[string]string, signature string) bool {
-			return true
-		})
-		server.NewServer(&utils.DefaultLogger{},
-			"/tmp/notify.sock").Serve()
-	}()
+	socket := tempSocketPath(t, "notify")
+	go server.NewServer(&utils.DefaultLogger{}, socket, server.WithRegistry(registry)).Serve()
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(300 * time.Millisecond)
 
-	// -name hello
-	os.Args = append(os.Args, "-name")
-	os.Args = append(os.Args, "hello")
 	client.NewCmd(&utils.DefaultLogger{},
-		"/tmp/notify.sock").Run()
+		socket).RunWithArgs([]string{"-name", "hello", "-param", "id=42", "-param", "foo=bar"})
+
+	select {
+	case args := <-result:
+		if args["id"] != "42" {
+			t.Fatalf("expected id=42, got %v", args["id"])
+		}
+		if args["foo"] != "bar" {
+			t.Fatalf("expected foo=bar, got %v", args["foo"])
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for job to execute")
+	}
 }
 
 /*func TestNewStoppableServerJob(t *testing.T) {
@@ -34,33 +48,31 @@ func TestNewCmd(t *testing.T) {
 }*/
 
 func TestNewStoppableJob(t *testing.T) {
-
-	go func() {
-		_ = server.AddStoppableJob("hello_stoppable", func(m map[string]string, signature string, quit chan struct{}) bool {
-			list := []int{1, 2, 3, 4, 5}
-			for _, value := range list {
-				select {
-				case <-quit:
-					fmt.Println("Received quit signal. Exiting loop.")
-					return true
-				default:
-					fmt.Printf("Processing value :%v, signature: %v \n", value, signature)
-					time.Sleep(3 * time.Second)
-				}
+	registry := server.NewRegistry()
+	if err := registry.AddStoppableJob("hello_stoppable", func(m map[string]string, signature string, quit chan struct{}) bool {
+		list := []int{1, 2, 3}
+		for _, value := range list {
+			select {
+			case <-quit:
+				fmt.Println("Received quit signal. Exiting loop.")
+				return true
+			default:
+				fmt.Printf("Processing value :%v, signature: %v \n", value, signature)
+				time.Sleep(200 * time.Millisecond)
 			}
-			return true
-		})
-		server.NewServer(&utils.DefaultLogger{},
-			"/tmp/notify.sock").Serve()
-	}()
+		}
+		return true
+	}); err != nil {
+		t.Fatalf("failed to add stoppable job: %v", err)
+	}
 
-	time.Sleep(3 * time.Second)
+	socket := tempSocketPath(t, "notify-stoppable")
+	go server.NewServer(&utils.DefaultLogger{}, socket, server.WithRegistry(registry)).Serve()
 
-	// -name hello
-	os.Args = append(os.Args, "-name")
-	os.Args = append(os.Args, "hello_stoppable")
+	time.Sleep(300 * time.Millisecond)
+
 	client.NewCmd(&utils.DefaultLogger{},
-		"/tmp/notify.sock").Run()
+		socket).RunWithArgs([]string{"-name", "hello_stoppable"})
 }
 
 /*func TestStoppableJob(t *testing.T) {
@@ -95,44 +107,46 @@ func TestNewStoppableJob(t *testing.T) {
 
 // 新增测试用例：测试停止任务功能
 func TestStopJob(t *testing.T) {
-	// 由于flag.Parse()不是并发安全的，我们需要串行执行这个测试
-	// 先启动服务器
-	go func() {
-		_ = server.AddStoppableJob("test_stoppable", func(m map[string]string, signature string, quit chan struct{}) bool {
-			for i := 0; i < 10; i++ {
-				select {
-				case <-quit:
-					fmt.Printf("Job %s with signature %s stopped\n", "test_stoppable", signature)
-					return true
-				default:
-					fmt.Printf("Processing step %d for job %s with signature %s\n", i, "test_stoppable", signature)
-					time.Sleep(1 * time.Second)
-				}
+	registry := server.NewRegistry()
+	if err := registry.AddStoppableJob("test_stoppable", func(m map[string]string, signature string, quit chan struct{}) bool {
+		for i := 0; i < 10; i++ {
+			select {
+			case <-quit:
+				fmt.Printf("Job %s with signature %s stopped\n", "test_stoppable", signature)
+				return true
+			default:
+				fmt.Printf("Processing step %d for job %s with signature %s\n", i, "test_stoppable", signature)
+				time.Sleep(120 * time.Millisecond)
 			}
-			return true
-		})
-		server.NewServer(&utils.DefaultLogger{},
-			"/tmp/notify_stop.sock").Serve()
+		}
+		return true
+	}); err != nil {
+		t.Fatalf("failed to add stoppable job: %v", err)
+	}
+
+	socket := tempSocketPath(t, "notify-stop")
+
+	go server.NewServer(&utils.DefaultLogger{}, socket, server.WithRegistry(registry)).Serve()
+
+	time.Sleep(300 * time.Millisecond)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		client.NewCmd(&utils.DefaultLogger{},
+			socket).RunWithArgs([]string{"-name", "test_stoppable"})
 	}()
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(400 * time.Millisecond)
 
-	// 保存原始的os.Args
-	originalArgs := os.Args
-	defer func() {
-		os.Args = originalArgs // 恢复原始参数
-	}()
-
-	// 启动一个长时间运行的任务
-	os.Args = []string{"cmd", "-name", "test_stoppable"}
 	client.NewCmd(&utils.DefaultLogger{},
-		"/tmp/notify_stop.sock").Run()
+		socket).RunWithArgs([]string{"-name", "test_stoppable", "-stop"})
 
-	// 等待任务开始执行
-	time.Sleep(2 * time.Second)
+	wg.Wait()
+}
 
-	// 发送停止信号
-	os.Args = []string{"cmd", "-name", "test_stoppable", "-stop"}
-	client.NewCmd(&utils.DefaultLogger{},
-		"/tmp/notify_stop.sock").Run()
+func tempSocketPath(t *testing.T, name string) string {
+	t.Helper()
+	return filepath.Join(os.TempDir(), fmt.Sprintf("saturncli-%s-%d.sock", name, time.Now().UnixNano()))
 }

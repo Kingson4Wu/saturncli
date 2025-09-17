@@ -8,16 +8,18 @@ import (
 	"net/http"
 )
 
-func (c *cli) buildHttpClient() *http.Client {
+func (c *cli) buildHTTPClient() *http.Client {
 	return &http.Client{
+		Timeout: defaultRequestTimeout,
 		Transport: &http.Transport{
-			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-				return net.Dial("unix", c.sockPath)
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				d := net.Dialer{}
+				return d.DialContext(ctx, "unix", c.sockPath)
 			},
 		},
 	}
 }
 
-func (task *Task) buildUrl() string {
-	return "http://unix/" + task.Name + "?" + task.Args
+func (task *Task) buildURL() (string, error) {
+	return task.buildURLForHost("unix")
 }

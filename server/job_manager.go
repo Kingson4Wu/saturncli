@@ -2,94 +2,190 @@ package server
 
 import (
 	"errors"
-	"github.com/Kingson4Wu/saturncli/base"
-	"github.com/Kingson4Wu/saturncli/utils"
-	"github.com/google/uuid"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/Kingson4Wu/saturncli/base"
+	"github.com/Kingson4Wu/saturncli/utils"
+	"github.com/google/uuid"
 )
+
+// JobHandler processes a scheduled job and returns true on success.
+type JobHandler func(map[string]string, string) bool
+
+// StoppableJobHandler is invoked for cancellable jobs; implementations should
+// watch the quit channel and stop work promptly when it is closed.
+type StoppableJobHandler func(map[string]string, string, chan struct{}) bool
 
 type notifyJob struct {
-	Name    string
-	Handler any
+	name      string
+	handler   JobHandler
+	stoppable StoppableJobHandler
 }
 
-var (
-	jobs                   = map[string]*notifyJob{}
-	lock                   sync.Mutex
-	stoppableJobRunningMap = make(map[string]*sync.Map)
-	stoppableJobLock       sync.Mutex
-)
-
-func AddJob(name string, handler func(map[string]string, string) bool) error {
-	return addJob(name, handler)
+func (j *notifyJob) isStoppable() bool {
+	return j != nil && j.stoppable != nil
 }
 
-func AddStoppableJob(name string, handler func(map[string]string, string, chan struct{}) bool) error {
-	stoppableJobLock.Lock()
-	defer stoppableJobLock.Unlock()
-	if _, ok := stoppableJobRunningMap[name]; !ok {
-		stoppableJobRunningMap[name] = &sync.Map{}
+// Registry maintains registered jobs and their active stoppable invocations.
+type Registry struct {
+	jobsMu    sync.RWMutex
+	jobs      map[string]*notifyJob
+	running   map[string]*sync.Map
+	runningMu sync.RWMutex
+}
+
+// NewRegistry constructs an empty job registry for use with a Server.
+func NewRegistry() *Registry {
+	return &Registry{
+		jobs:    make(map[string]*notifyJob),
+		running: make(map[string]*sync.Map),
 	}
-	return addJob(name, handler)
 }
 
-func addJob(name string, handler any) error {
-	lock.Lock()
-	defer lock.Unlock()
-	if _, ok := jobs[name]; ok {
+var defaultRegistry = NewRegistry()
+
+// AddJob registers a non-stoppable job in the package-level registry.
+func AddJob(name string, handler JobHandler) error {
+	return defaultRegistry.AddJob(name, handler)
+}
+
+// AddStoppableJob registers a stoppable job in the package-level registry.
+func AddStoppableJob(name string, handler StoppableJobHandler) error {
+	return defaultRegistry.AddStoppableJob(name, handler)
+}
+
+// AddJob registers a non-stoppable job against the receiver registry.
+func (r *Registry) AddJob(name string, handler JobHandler) error {
+	if handler == nil {
+		return errors.New("handler is nil")
+	}
+	job := &notifyJob{name: name, handler: handler}
+	return r.registerJob(job)
+}
+
+// AddStoppableJob registers a stoppable job against the receiver registry.
+func (r *Registry) AddStoppableJob(name string, handler StoppableJobHandler) error {
+	if handler == nil {
+		return errors.New("handler is nil")
+	}
+	r.ensureRunningMap(name)
+	job := &notifyJob{name: name, stoppable: handler}
+	return r.registerJob(job)
+}
+
+func (r *Registry) registerJob(job *notifyJob) error {
+	if job == nil || strings.TrimSpace(job.name) == "" {
+		return errors.New("job name is empty")
+	}
+	r.jobsMu.Lock()
+	defer r.jobsMu.Unlock()
+	if _, ok := r.jobs[job.name]; ok {
 		return errors.New("the job is already exist")
 	}
-	jobs[name] = &notifyJob{Name: name, Handler: handler}
+	r.jobs[job.name] = job
 	return nil
 }
 
-func addStoppableJobToRunningMap(jobName, signature string, quit chan struct{}) {
-	if runningMap, ok := stoppableJobRunningMap[jobName]; ok {
-		_, _ = runningMap.LoadOrStore(signature, quit)
+func (r *Registry) getJob(name string) (*notifyJob, bool) {
+	r.jobsMu.RLock()
+	defer r.jobsMu.RUnlock()
+	job, ok := r.jobs[name]
+	return job, ok
+}
+
+func (r *Registry) ensureRunningMap(name string) {
+	r.runningMu.Lock()
+	defer r.runningMu.Unlock()
+	if _, ok := r.running[name]; !ok {
+		r.running[name] = &sync.Map{}
 	}
 }
-func removeStoppableJobFromRunningMap(jobName, signature string) {
-	if runningMap, ok := stoppableJobRunningMap[jobName]; ok {
-		_, _ = runningMap.LoadAndDelete(signature)
+
+func (r *Registry) runningMap(name string) *sync.Map {
+	r.runningMu.RLock()
+	defer r.runningMu.RUnlock()
+	return r.running[name]
+}
+
+func (r *Registry) trackStoppable(jobName, signature string, quit chan struct{}) {
+	if signature == "" || quit == nil {
+		return
+	}
+	if runningMap := r.runningMap(jobName); runningMap != nil {
+		runningMap.Store(signature, quit)
 	}
 }
-func stopTheSpecifiedStoppableJob(jobName, signature string) bool {
-	if runningMap, ok := stoppableJobRunningMap[jobName]; ok {
-		if v, ok := runningMap.Load(signature); ok {
-			if quit, ok := v.(chan struct{}); ok {
-				close(quit)
-				return true
+
+func (r *Registry) untrackStoppable(jobName, signature string) {
+	if signature == "" {
+		return
+	}
+	if runningMap := r.runningMap(jobName); runningMap != nil {
+		runningMap.Delete(signature)
+	}
+}
+
+func (r *Registry) stopSpecific(jobName, signature string) bool {
+	if signature == "" {
+		return false
+	}
+	if runningMap := r.runningMap(jobName); runningMap != nil {
+		if value, ok := runningMap.LoadAndDelete(signature); ok {
+			if quit, ok := value.(chan struct{}); ok {
+				safeCloseQuit(quit)
 			}
+			return true
 		}
 	}
 	return false
 }
 
-func stopTheStoppableJob(jobName string) bool {
-	if runningMap, ok := stoppableJobRunningMap[jobName]; ok {
-		runningMap.Range(func(k, v interface{}) bool {
-			if quit, ok := v.(chan struct{}); ok {
-				close(quit)
+func (r *Registry) stopAll(jobName string) bool {
+	if runningMap := r.runningMap(jobName); runningMap != nil {
+		stopped := false
+		runningMap.Range(func(key, value any) bool {
+			runningMap.Delete(key)
+			if quit, ok := value.(chan struct{}); ok {
+				if safeCloseQuit(quit) {
+					stopped = true
+				}
 			}
 			return true
 		})
-		return true
+		return stopped
 	}
 	return false
+}
+
+type ServerOption func(*ser)
+
+// WithRegistry swaps the Server's backing registry, enabling isolated job sets.
+func WithRegistry(registry *Registry) ServerOption {
+	return func(s *ser) {
+		if registry != nil {
+			s.registry = registry
+		}
+	}
 }
 
 type ser struct {
 	logger   utils.Logger
 	sockPath string
+	registry *Registry
 }
 
-func NewServer(logger utils.Logger, sockPath string) *ser {
-	return &ser{
+func NewServer(logger utils.Logger, sockPath string, opts ...ServerOption) *ser {
+	srv := &ser{
 		logger:   logger,
 		sockPath: sockPath,
+		registry: defaultRegistry,
 	}
+	for _, opt := range opts {
+		opt(srv)
+	}
+	return srv
 }
 
 func (s *ser) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -104,7 +200,7 @@ func (s *ser) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	name := r.URL.Path
 	name = strings.TrimPrefix(name, "/")
 
-	if job, ok := jobs[name]; ok {
+	if job, ok := s.registry.getJob(name); ok {
 		if r.Header.Get(base.StopJobFlag) == "true" {
 			s.stopJob(rw, r, job)
 			return
@@ -119,9 +215,12 @@ func (s *ser) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ser) runJob(rw http.ResponseWriter, r *http.Request, job *notifyJob) {
-	name := job.Name
+	name := job.name
 	args := map[string]string{}
 	for k, v := range r.URL.Query() {
+		if len(v) == 0 {
+			continue
+		}
 		args[k] = v[0]
 	}
 	signature := r.Header.Get(base.RunSignature)
@@ -134,20 +233,23 @@ func (s *ser) runJob(rw http.ResponseWriter, r *http.Request, job *notifyJob) {
 		signature = "cron"
 	}
 	var executeResult bool
-	switch h := job.Handler.(type) {
-	case func(map[string]string, string) bool:
-		executeResult = h(args, signature)
-	case func(map[string]string, string, chan struct{}) bool:
+	switch {
+	case job.handler != nil:
+		executeResult = job.handler(args, signature)
+	case job.stoppable != nil:
 		quit := make(chan struct{})
-		addStoppableJobToRunningMap(name, signature, quit)
-		defer removeStoppableJobFromRunningMap(name, signature)
-		executeResult = h(args, signature, quit)
+		s.registry.trackStoppable(name, signature, quit)
+		defer s.registry.untrackStoppable(name, signature)
+		executeResult = job.stoppable(args, signature, quit)
 		if isClosed(quit) {
 			_, _ = rw.Write([]byte(base.INTERRUPT))
 			s.logger.Warnf("saturn server job was interrupted, name:%s, args: %s, signature: %s", name, args, signature)
 			return
 		}
 	default:
+		s.logger.Errorf("saturn server job handler missing, name:%s", name)
+		_, _ = rw.Write([]byte(base.FAILURE))
+		return
 	}
 	if executeResult {
 		_, _ = rw.Write([]byte(base.SUCCESS))
@@ -168,19 +270,29 @@ func isClosed(ch <-chan struct{}) bool {
 }
 
 func (s *ser) stopJob(rw http.ResponseWriter, r *http.Request, job *notifyJob) {
-	name := job.Name
+	jobName := ""
+	if job != nil {
+		jobName = job.name
+	}
+	if job == nil || !job.isStoppable() {
+		_, _ = rw.Write([]byte(base.FAILURE))
+		s.logger.Errorf("saturn server job stop failure, job is not stoppable, name:%s", jobName)
+		return
+	}
+	name := job.name
 	args := map[string]string{}
 	for k, v := range r.URL.Query() {
+		if len(v) == 0 {
+			continue
+		}
 		args[k] = v[0]
 	}
 	var executeResult bool
 	signature := r.Header.Get(base.StopSignature)
 	if signature != "" {
-		//stop the task with specified signature.
-		executeResult = stopTheSpecifiedStoppableJob(name, signature)
+		executeResult = s.registry.stopSpecific(name, signature)
 	} else {
-		//stop all task with job name.
-		executeResult = stopTheStoppableJob(name)
+		executeResult = s.registry.stopAll(name)
 	}
 
 	if executeResult {
@@ -190,4 +302,17 @@ func (s *ser) stopJob(rw http.ResponseWriter, r *http.Request, job *notifyJob) {
 		_, _ = rw.Write([]byte(base.FAILURE))
 		s.logger.Errorf("saturn server job stop failure, name:%s, args: %s, signature: %s", name, args, signature)
 	}
+}
+
+func safeCloseQuit(quit chan struct{}) bool {
+	if quit == nil {
+		return false
+	}
+	select {
+	case <-quit:
+		return false
+	default:
+	}
+	close(quit)
+	return true
 }
