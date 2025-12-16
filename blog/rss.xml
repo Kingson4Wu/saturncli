@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Saturn CLI - Go Job Execution Toolkit | Unix Domain Sockets &amp; Background Jobs Blog</title>
+        <link>https://kingson4wu.github.io/saturncli/blog</link>
+        <description>Saturn CLI - Go Job Execution Toolkit | Unix Domain Sockets &amp; Background Jobs Blog</description>
+        <lastBuildDate>Tue, 16 Dec 2025 10:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Elegant and Efficient Local Inter-Process Communication with Unix Domain Sockets]]></title>
+            <link>https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication</link>
+            <guid>https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication</guid>
+            <pubDate>Tue, 16 Dec 2025 10:00:00 GMT</pubDate>
+            <description><![CDATA[Deep dive into Unix Domain Sockets implementation for high-performance inter-process communication, using Saturn CLI as a practical example]]></description>
+            <content:encoded><![CDATA[<p>In modern software systems, <strong>inter-process communication (IPC)</strong> is a common requirement. Particularly in local environments, enabling CLI tools to communicate with background services or daemons efficiently and securely is a key architectural challenge. While HTTP or TCP sockets are commonly used, they introduce unnecessary overhead for <strong>same-machine communication</strong>.</p>
+<p>A more elegant alternative is <strong>Unix Domain Sockets (UDS)</strong>. UDS leverages the operating system's kernel to provide a high-performance, low-latency IPC channel. This article provides a comprehensive analysis of UDS implementation, design advantages, and application patterns, using the open-source project <code>saturncli</code> as a best-practice example.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="unix-domain-socket-basics">Unix Domain Socket Basics<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#unix-domain-socket-basics" class="hash-link" aria-label="Direct link to Unix Domain Socket Basics" title="Direct link to Unix Domain Socket Basics" translate="no">​</a></h2>
+<p>Unix Domain Sockets are a native IPC mechanism provided by Unix-like systems. They use the same socket APIs as TCP/UDP (e.g., <code>socket()</code>, <code>listen()</code>, <code>accept()</code>), but with an <strong>address family of <code>AF_UNIX</code></strong>, and endpoints identified by filesystem paths rather than IP addresses and ports.</p>
+<p>Key characteristics:</p>
+<ol>
+<li class=""><strong>Local-only communication</strong>: inherently secure and not accessible remotely</li>
+<li class=""><strong>Filesystem path identification</strong>: access can be controlled via standard file permissions</li>
+<li class=""><strong>Low-latency, high-performance</strong>: avoids network stack overhead</li>
+<li class=""><strong>Full-duplex reliable transmission</strong>: supports bidirectional communication with ordered delivery</li>
+</ol>
+<p>UDS supports both <strong>stream (<code>SOCK_STREAM</code>)</strong> and <strong>datagram (<code>SOCK_DGRAM</code>)</strong> modes. Stream sockets function like TCP, ideal for request-response workflows, while datagram sockets are similar to UDP, suitable for event notifications or broadcasts.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-choose-uds-for-local-communication">Why Choose UDS for Local Communication<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#why-choose-uds-for-local-communication" class="hash-link" aria-label="Direct link to Why Choose UDS for Local Communication" title="Direct link to Why Choose UDS for Local Communication" translate="no">​</a></h2>
+<p>Common methods for CLI-to-service communication include HTTP/TCP, message queues, shared memory, and named pipes. Compared to these approaches, Unix Domain Sockets offer distinct advantages:</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="performance-and-latency">Performance and Latency<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#performance-and-latency" class="hash-link" aria-label="Direct link to Performance and Latency" title="Direct link to Performance and Latency" translate="no">​</a></h3>
+<p>HTTP requires full TCP/IP stack processing, including segmentation, checksums, and context switches. UDS transmits data directly via kernel buffers, bypassing network layers and reducing communication latency. This is particularly beneficial for frequent small requests.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="simplified-protocol-design">Simplified Protocol Design<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#simplified-protocol-design" class="hash-link" aria-label="Direct link to Simplified Protocol Design" title="Direct link to Simplified Protocol Design" translate="no">​</a></h3>
+<p>HTTP demands method parsing, headers, and status codes, often unnecessary for local CLI invocations. UDS enables custom lightweight protocols, simply sending command names and arguments without extra encapsulation.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="security-and-access-control">Security and Access Control<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#security-and-access-control" class="hash-link" aria-label="Direct link to Security and Access Control" title="Direct link to Security and Access Control" translate="no">​</a></h3>
+<p>UDS endpoints are filesystem nodes, allowing standard file permissions to restrict access. This provides natural process isolation without additional network security mechanisms.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="full-duplex-communication">Full-Duplex Communication<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#full-duplex-communication" class="hash-link" aria-label="Direct link to Full-Duplex Communication" title="Direct link to Full-Duplex Communication" translate="no">​</a></h3>
+<p>Unlike pipes, UDS supports bidirectional communication on the same connection. This allows CLI commands to be sent and results returned through a single channel.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="typical-uds-application-pattern">Typical UDS Application Pattern<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#typical-uds-application-pattern" class="hash-link" aria-label="Direct link to Typical UDS Application Pattern" title="Direct link to Typical UDS Application Pattern" translate="no">​</a></h2>
+<p>A common UDS usage pattern follows this workflow:</p>
+<ol>
+<li class=""><strong>Server</strong>: creates a socket at a specific path and listens for connections</li>
+<li class=""><strong>Client</strong>: connects to the socket, sending commands or requests</li>
+<li class=""><strong>Server processing</strong>: reads requests, executes logic, and generates responses</li>
+<li class=""><strong>Client receives results</strong>: reads responses from the same connection</li>
+</ol>
+<p>This pattern effectively implements <strong>local RPC</strong> (Remote Procedure Call), restricted to the same machine. Compared to shared memory, which requires explicit synchronization, UDS leverages kernel buffering and blocking read/write for reliable data transmission.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="kernel-level-implementation-principles">Kernel-Level Implementation Principles<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#kernel-level-implementation-principles" class="hash-link" aria-label="Direct link to Kernel-Level Implementation Principles" title="Direct link to Kernel-Level Implementation Principles" translate="no">​</a></h2>
+<p>The efficiency of UDS stems from kernel-space buffering and optimized data flow:</p>
+<ul>
+<li class=""><strong>Kernel buffers</strong>: data written by the sender is copied directly to the receiver's kernel buffer, avoiding multiple user-space copies</li>
+<li class=""><strong>Filesystem path addressing</strong>: the socket path is created in the filesystem, and access is controlled by standard permissions</li>
+<li class=""><strong>Blocking and non-blocking modes</strong>: synchronous or asynchronous communication can be implemented based on application needs</li>
+</ul>
+<p>These mechanisms ensure reliability and security while maintaining near-memory-copy performance.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="comparison-with-other-ipc-mechanisms">Comparison with Other IPC Mechanisms<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#comparison-with-other-ipc-mechanisms" class="hash-link" aria-label="Direct link to Comparison with Other IPC Mechanisms" title="Direct link to Comparison with Other IPC Mechanisms" translate="no">​</a></h2>
+<table><thead><tr><th>Mechanism</th><th>Advantages</th><th>Limitations</th></tr></thead><tbody><tr><td>Unix Domain Socket</td><td>Reliable, full-duplex, protocol customizable</td><td>Single connection buffer limits</td></tr><tr><td>Shared Memory</td><td>Extremely high performance</td><td>Requires explicit synchronization</td></tr><tr><td>Message Queue</td><td>Asynchronous, message boundaries</td><td>Limited message size, simple semantics</td></tr><tr><td>Named Pipe (FIFO)</td><td>Simple</td><td>Half-duplex, complex message boundaries</td></tr><tr><td>HTTP/TCP</td><td>Cross-host, universal</td><td>High protocol overhead, higher latency</td></tr></tbody></table>
+<p>UDS occupies an optimal point in the IPC design space: it balances performance, security, and programmability, making it ideal for CLI-to-local service interactions.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="best-practice-example">Best-Practice Example<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#best-practice-example" class="hash-link" aria-label="Direct link to Best-Practice Example" title="Direct link to Best-Practice Example" translate="no">​</a></h2>
+<p>The open-source project <code>saturncli</code> demonstrates UDS-based CLI-to-service communication. It exemplifies concise protocol design, low-latency messaging, and secure local IPC, making it an excellent reference for engineers seeking to implement similar patterns.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="conclusion">Conclusion<a href="https://kingson4wu.github.io/saturncli/blog/uds-interprocess-communication#conclusion" class="hash-link" aria-label="Direct link to Conclusion" title="Direct link to Conclusion" translate="no">​</a></h2>
+<p>Unix Domain Sockets provide an <strong>elegant, professional, and high-performance solution</strong> for local IPC. Key benefits include:</p>
+<ul>
+<li class="">Reduced protocol overhead and higher performance for same-machine communication</li>
+<li class="">Simplified request/response protocol design</li>
+<li class="">Kernel-buffered reliable transmission</li>
+<li class="">Natural security and process isolation via filesystem permissions</li>
+<li class="">Full-duplex communication supporting flexible interaction patterns</li>
+</ul>
+<p>For any project requiring efficient, reliable, and secure CLI-to-service communication on a single host, Unix Domain Sockets are a highly recommended choice.</p>]]></content:encoded>
+            <category>go</category>
+            <category>unix domain sockets</category>
+            <category>IPC</category>
+            <category>saturncli</category>
+            <category>architecture</category>
+        </item>
+    </channel>
+</rss>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Saturn planet with rings -->
+  <circle cx="100" cy="100" r="40" fill="#4a90e2" />
+  
+  <!-- Saturn's rings -->
+  <ellipse cx="100" cy="100" rx="60" ry="15" fill="none" stroke="#7ed321" stroke-width="3" />
+  <ellipse cx="100" cy="100" rx="50" ry="10" fill="none" stroke="#f5a623" stroke-width="2" />
+  
+  <!-- CLI prompt symbol -->
+  <path d="M60 120 L80 140 L60 160" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" />
+  
+  <!-- Socket connection lines -->
+  <line x1="140" y1="90" x2="170" y2="90" stroke="#f8e71c" stroke-width="4" />
+  <line x1="140" y1="110" x2="170" y2="110" stroke="#f8e71c" stroke-width="4" />
+  
+  <!-- Connection dots - representing Unix domain socket communication -->
+  <circle cx="145" cy="90" r="2" fill="#f8e71c" />
+  <circle cx="150" cy="90" r="2" fill="#f8e71c" />
+  <circle cx="155" cy="90" r="2" fill="#f8e71c" />
+  <circle cx="145" cy="110" r="2" fill="#f8e71c" />
+  <circle cx="150" cy="110" r="2" fill="#f8e71c" />
+  <circle cx="155" cy="110" r="2" fill="#f8e71c" />
+  
+  <!-- Go gopher tail element to represent Go language -->
+  <path d="M30 80 Q50 60 70 80" stroke="#7ed321" stroke-width="4" fill="none" />
+  <circle cx="35" cy="75" r="5" fill="#7ed321" />
+  
+  <!-- Text "CLI" in a subtle way -->
+  <text x="100" y="45" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" text-anchor="middle">CLI</text>
+</svg>

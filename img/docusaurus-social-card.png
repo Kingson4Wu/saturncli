@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#1a1a1a" />
+  
+  <!-- Saturn planet with rings -->
+  <circle cx="600" cy="315" r="120" fill="#4a90e2" />
+  <ellipse cx="600" cy="315" rx="180" ry="40" fill="none" stroke="#7ed321" stroke-width="8" />
+  <ellipse cx="600" cy="315" rx="140" ry="24" fill="none" stroke="#f5a623" stroke-width="6" />
+  
+  <!-- CLI prompt elements -->
+  <path d="180 380 L260 440 L180 500" stroke="#ffffff" stroke-width="16" fill="none" stroke-linecap="round" />
+  
+  <!-- Connection lines representing Unix domain sockets -->
+  <line x1="440" y1="280" x2="600" y2="280" stroke="#f8e71c" stroke-width="10" />
+  <line x1="440" y1="350" x2="600" y2="350" stroke="#f8e71c" stroke-width="10" />
+  <circle cx="470" cy="280" r="8" fill="#f8e71c" />
+  <circle cx="500" cy="280" r="8" fill="#f8e71c" />
+  <circle cx="530" cy="280" r="8" fill="#f8e71c" />
+  <circle cx="470" cy="350" r="8" fill="#f8e71c" />
+  <circle cx="500" cy="350" r="8" fill="#f8e71c" />
+  <circle cx="530" cy="350" r="8" fill="#f8e71c" />
+  
+  <!-- Text -->
+  <text x="650" y="200" font-family="Arial, sans-serif" font-size="72" fill="#ffffff">Saturn CLI</text>
+  <text x="650" y="300" font-family="Arial, sans-serif" font-size="48" fill="#4a90e2">Go Job Execution Toolkit</text>
+  <text x="650" y="380" font-family="Arial, sans-serif" font-size="36" fill="#f5a623">Unix Domain Sockets &amp; Background Jobs</text>
+  
+  <!-- Go language indicator -->
+  <path d="160 240 Q240 160 320 240" stroke="#7ed321" stroke-width="12" fill="none" />
+  <circle cx="180" cy="220" r="16" fill="#7ed321" />
+  
+  <!-- Footer text -->
+  <text x="600" y="580" font-family="Arial, sans-serif" font-size="32" fill="#888888" text-anchor="middle">Based on VipShop Saturn distributed task scheduling system</text>
+</svg>
