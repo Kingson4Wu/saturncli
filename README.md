@@ -15,7 +15,16 @@ English | [简体中文](https://github.com/Kingson4Wu/saturncli/blob/main/READM
 
 Saturn CLI is a lightweight client/server toolkit that lets you trigger and monitor shell-style jobs from your Go services or the command line. The client communicates with a long-running daemon over Unix domain sockets (macOS/Linux) or HTTP (Windows), providing a fast, secure channel for orchestrating background work such as scheduled tasks in [Saturn](https://github.com/vipshop/Saturn).
 
-The codebase is designed to be embedded directly into existing services. You can register jobs programmatically, expose them via the bundled server, and control execution through the CLI or custom integrations built on top of the client package.
+This project is a Go CLI client implementation based on the [Saturn](https://github.com/vipshop/Saturn) distributed task scheduling system originally developed by VipShop. The Saturn CLI toolkit is designed to be embedded directly into existing services. You can register jobs programmatically, expose them via the bundled server, and control execution through the CLI or custom integrations built on top of the client package.
+
+## Documentation
+
+Complete documentation for Saturn CLI is available in the [documentation](./documentation/) directory and can be viewed online at our [documentation site](https://kingson4wu.github.io/saturncli/). The documentation includes:
+- Getting started guides
+- API references
+- Architecture documentation
+- Usage examples
+- Best practices
 
 ## Highlights
 
